@@ -85,9 +85,31 @@ class Game:
 
             self.snake.move()
 
+            if self.is_collision():
+                running = False
+
             self.draw()
 
             clock.tick(10)
+
+    def is_collision(self):
+        head = self.snake.positions[0]
+
+        if (
+            head[0] < 0
+            or head[0] >= window_width
+            or head[1] < 0
+            or head[1] >= window_height
+            or head in self.snake.positions[1:]
+        ):
+            return True
+
+        if head == self.food_position:
+            self.snake.length += 1
+            self.score += 1
+            self.food_position = self.generate_food_pos()
+
+        return False
 
     def draw(self):
         window.fill(BLACK)
@@ -98,4 +120,3 @@ class Game:
 
 game = Game()
 game.play()
-
