@@ -4,6 +4,7 @@ import random
 pygame.init()
 
 GREEN = (0, 255, 0)
+RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 
 window_width = 800
@@ -58,7 +59,13 @@ class Snake:
 class Game:
     def __init__(self):
         self.snake = Snake()
+        self.food_position = self.generate_food_pos()
         self.score = 0
+
+    def generate_food_pos(self):
+        x = random.randint(0, (window_width - cell_size) // cell_size) * cell_size
+        y = random.randint(0, (window_height - cell_size) // cell_size) * cell_size
+        return x, y
 
     def play(self):
         running = True
@@ -85,6 +92,7 @@ class Game:
     def draw(self):
         window.fill(BLACK)
         self.snake.draw()
+        pygame.draw.rect(window, RED, (self.food_position[0], self.food_position[1], cell_size, cell_size))
         pygame.display.update()
 
 
