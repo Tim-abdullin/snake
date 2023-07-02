@@ -10,7 +10,7 @@ BLACK = (0, 0, 0)
 window_width = 800
 window_height = 600
 
-cell_size = 20
+cell_size = 50
 
 window = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption("Змейка")
@@ -63,9 +63,13 @@ class Game:
         self.score = 0
 
     def generate_food_pos(self):
-        x = random.randint(0, (window_width - cell_size) // cell_size) * cell_size
-        y = random.randint(0, (window_height - cell_size) // cell_size) * cell_size
-        return x, y
+        while True:
+            x = random.randint(0, (window_width - cell_size) // cell_size) * cell_size
+            y = random.randint(0, (window_height - cell_size) // cell_size) * cell_size
+            food_position = (x, y)
+
+            if food_position not in self.snake.positions:
+                return food_position
 
     def play(self):
         running = True
@@ -90,7 +94,7 @@ class Game:
 
             self.draw()
 
-            clock.tick(10)
+            clock.tick(5)
 
     def is_collision(self):
         head = self.snake.positions[0]
