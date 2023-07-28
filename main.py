@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 pygame.init()
 
@@ -7,12 +8,36 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 
-window_width = 800
-window_height = 600
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 
-cell_size = 50
+CELL_SIZE = 50
 
-window = pygame.display.set_mode((window_width, window_height))
+img_food = pygame.transform.scale(pygame.image.load('images/Apple.png'), [CELL_SIZE, CELL_SIZE])
+
+# Загрузка изображений для анимации головы змейки
+HEAD_IMAGES = {
+    "up": pygame.transform.scale(pygame.image.load(os.path.join("images", "head_up.png")), [CELL_SIZE, CELL_SIZE]),
+    "down": pygame.transform.scale(pygame.image.load(os.path.join("images", "head_down.png")), [CELL_SIZE, CELL_SIZE]),
+    "left": pygame.transform.scale(pygame.image.load(os.path.join("images", "head_left.png")), [CELL_SIZE, CELL_SIZE]),
+    "right": pygame.transform.scale(pygame.image.load(os.path.join("images", "head_right.png")), [CELL_SIZE, CELL_SIZE])
+}
+
+# Загрузка изображений для туловища змейки
+BODY_HORIZONTAL = pygame.transform.scale(pygame.image.load(os.path.join("images", "body_horizontal.png")), [CELL_SIZE, CELL_SIZE])
+BODY_VERTICAL = pygame.transform.scale(pygame.image.load(os.path.join("images", "body_vertical.png")), [CELL_SIZE, CELL_SIZE])
+
+# Загрузка изображений для хвоста змейки
+TAIL_IMAGES = {
+    "up": pygame.transform.scale(pygame.image.load(os.path.join("images", "tail_up.png")), [CELL_SIZE, CELL_SIZE]),
+    "down": pygame.transform.scale(pygame.image.load(os.path.join("images", "tail_down.png")), [CELL_SIZE, CELL_SIZE]),
+    "left": pygame.transform.scale(pygame.image.load(os.path.join("images", "tail_left.png")), [CELL_SIZE, CELL_SIZE]),
+    "right": pygame.transform.scale(pygame.image.load(os.path.join("images", "tail_right.png")), [CELL_SIZE, CELL_SIZE])
+}
+
+BODY_TURN = pygame.transform.scale(pygame.image.load(os.path.join("images", "body_turn.png")), [CELL_SIZE, CELL_SIZE])
+
+window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Змейка")
 
 clock = pygame.time.Clock()
@@ -21,24 +46,36 @@ clock = pygame.time.Clock()
 class Snake:
     def __init__(self):
         self.length = 1
-        self.positions = [(window_width // 2, window_height // 2)]
+        self.positions = [(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)]
         self.direction = random.choice(['up', 'down', 'left', 'right'])
         self.color = GREEN
 
     def draw(self):
-        for position in self.positions:
-            pygame.draw.rect(window, self.color, (position[0], position[1], cell_size, cell_size))
+        for index, position in enumerate(self.positions):
+            if index == 0:  # Голова змейки
+                img = HEAD_IMAGES[self.direction]
+            elif index == len(self.positions) - 1:  # Хвост змейки
+                img = TAIL_IMAGES[self.get_tail_direction()]
+            else:
+                if self.is_corner(index):  # Угол туловища змейки
+                    img = pygame.transform.rotate(BODY_TURN, self.get_corner_angle(index))
+                elif self.is_body_horizontal(index):  # Туловище змейки (горизонтальное)
+                    img = BODY_HORIZONTAL
+                else:  # Туловище змейки (вертикальное)
+                    img = BODY_VERTICAL
+
+            window.blit(img, position)
 
     def move(self):
         head_x, head_y = self.positions[0]
         if self.direction == 'up':
-            head_y -= cell_size
+            head_y -= CELL_SIZE
         elif self.direction == 'down':
-            head_y += cell_size
+            head_y += CELL_SIZE
         elif self.direction == 'left':
-            head_x -= cell_size
+            head_x -= CELL_SIZE
         elif self.direction == 'right':
-            head_x += cell_size
+            head_x += CELL_SIZE
 
         self.positions.insert(0, (head_x, head_y))
 
@@ -55,6 +92,63 @@ class Snake:
         if new_direction == 'right' and self.direction != 'left':
             self.direction = 'right'
 
+    def get_tail_direction(self):
+        tail_x, tail_y = self.positions[-1]
+        second_to_last_x, second_to_last_y = self.positions[-2]
+
+        if tail_x < second_to_last_x:
+            return 'left'
+        elif tail_x > second_to_last_x:
+            return 'right'
+        elif tail_y < second_to_last_y:
+            return 'up'
+        else:
+            return 'down'
+
+    def is_body_horizontal(self, index):
+        x1, y1 = self.positions[index - 1]
+        x2, y2 = self.positions[index]
+        return x1 != x2
+
+    def is_corner(self, index):
+        if index < 1 or index >= len(self.positions) - 1:
+            return False
+
+        x1, y1 = self.positions[index - 1]
+        x2, y2 = self.positions[index]
+        x3, y3 = self.positions[index + 1]
+
+        # Проверяем, является ли позиция туловища углом (вставляем проверку на угол)
+        if (x1 - x2 == 0 and x2 - x3 == 0) or (y1 - y2 == 0 and y2 - y3 == 0):
+            return False
+        return True
+
+    def get_corner_angle(self, index):
+        x1, y1 = self.positions[index - 1]
+        x2, y2 = self.positions[index]
+        x3, y3 = self.positions[index + 1]
+
+        if x2 == x1 and y2 > y1:
+            if x2 < x3:
+                return 0
+            else:
+                return 90
+        elif x2 == x1 and y2 < y1:
+            if x2 < x3:
+                return 270
+            else:
+                return 180
+        elif y2 == y1 and x2 > x1:
+            if y2 < y3:
+                return 180
+            else:
+                return 90
+        elif y2 == y1 and x2 < x1:
+            if y2 < y3:
+                return 270
+            else:
+                return 0
+
 
 class Game:
     def __init__(self):
@@ -64,8 +158,8 @@ class Game:
 
     def generate_food_pos(self):
         while True:
-            x = random.randint(0, (window_width - cell_size) // cell_size) * cell_size
-            y = random.randint(0, (window_height - cell_size) // cell_size) * cell_size
+            x = random.randint(0, (WINDOW_WIDTH - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
+            y = random.randint(0, (WINDOW_HEIGHT - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
             food_position = (x, y)
 
             if food_position not in self.snake.positions:
@@ -82,9 +176,9 @@ class Game:
                         self.snake.change_direction('up')
                     elif event.key == pygame.K_DOWN:
                         self.snake.change_direction('down')
-                    if event.key == pygame.K_LEFT:
+                    elif event.key == pygame.K_LEFT:
                         self.snake.change_direction('left')
-                    if event.key == pygame.K_RIGHT:
+                    elif event.key == pygame.K_RIGHT:
                         self.snake.change_direction('right')
 
             self.snake.move()
@@ -101,9 +195,9 @@ class Game:
 
         if (
             head[0] < 0
-            or head[0] >= window_width
+            or head[0] >= WINDOW_WIDTH
             or head[1] < 0
-            or head[1] >= window_height
+            or head[1] >= WINDOW_HEIGHT
             or head in self.snake.positions[1:]
         ):
             return True
@@ -118,7 +212,7 @@ class Game:
     def draw(self):
         window.fill(BLACK)
         self.snake.draw()
-        pygame.draw.rect(window, RED, (self.food_position[0], self.food_position[1], cell_size, cell_size))
+        window.blit(img_food, (self.food_position[0], self.food_position[1], CELL_SIZE, CELL_SIZE))
         pygame.display.update()
 
 
